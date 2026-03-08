@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Shared Board</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+padding:30px;
+}
+
+.board{
+display:flex;
+gap:20px;
+}
+
+.column{
+background:#1e293b;
+padding:15px;
+border-radius:10px;
+width:300px;
+}
+
+.card{
+background:white;
+color:black;
+padding:8px;
+margin:6px 0;
+border-radius:6px;
+}
+
+button{
+margin-top:15px;
+padding:8px 12px;
+background:#3b82f6;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Shared Task Board</h1>
+
+<div class="board">
+
+<div class="column">
+<h2>To Do</h2>
+<div id="todo"></div>
+</div>
+
+<div class="column">
+<h2>Doing</h2>
+<div id="doing"></div>
+</div>
+
+<div class="column">
+<h2>Done</h2>
+<div id="done"></div>
+</div>
+
+</div>
+
+<button onclick="newTask()">Add Task</button>
+
+<script>
+
+const USER = "YOUR_USERNAME";
+const REPO = "trello-board";
+
+async function loadTasks(){
+
+const res = await fetch(
+`https://api.github.com/repos/${USER}/${REPO}/issues`
+);
+
+const issues = await res.json();
+
+document.getElementById("todo").innerHTML="";
+document.getElementById("doing").innerHTML="";
+document.getElementById("done").innerHTML="";
+
+issues.forEach(issue => {
+
+let column="todo";
+
+issue.labels.forEach(label=>{
+if(label.name==="doing") column="doing";
+if(label.name==="done") column="done";
+});
+
+const card=document.createElement("div");
+card.className="card";
+card.innerText=issue.title;
+
+document.getElementById(column).appendChild(card);
+
+});
+
+}
+
+function newTask(){
+
+window.open(
+`https://github.com/${USER}/${REPO}/issues/new`,
+"_blank"
+);
+
+}
+
+loadTasks();
+
+</script>
+
+</body>
+</html>
