@@ -2,19 +2,19 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Private Chat Board</title>
+<title>Private Multi-User Chat</title>
 <style>
-body{
+body {
   font-family: Arial, sans-serif;
   background: #0f172a;
   color: white;
   padding: 30px;
 }
-#chatContainer{
+#chatContainer {
   max-width: 500px;
   margin: auto;
   display: flex;
-  flex-direction: column; /* oldest on top, newest bottom */
+  flex-direction: column; /* oldest on top */
   gap: 10px;
   border: 1px solid #1e293b;
   padding: 10px;
@@ -23,29 +23,36 @@ body{
   overflow-y: auto;
   background: #1e293b;
 }
-.message{
+.message {
   padding: 8px 12px;
   border-radius: 15px;
   max-width: 80%;
   word-wrap: break-word;
   position: relative;
 }
-.message .time{
+.message .time {
   font-size: 10px;
   color: #ccc;
   position: absolute;
   bottom: -15px;
   right: 10px;
 }
-.userMessage{
+.message .userName {
+  font-size: 10px;
+  color: #bbb;
+  position: absolute;
+  top: -15px;
+  left: 10px;
+}
+.userMessage {
   background: #3b82f6;
   align-self: flex-end;
 }
-.otherMessage{
+.otherMessage {
   background: #374151;
   align-self: flex-start;
 }
-#inputArea{
+#inputArea {
   display: flex;
   justify-content: space-between;
   margin-top: 15px;
@@ -53,14 +60,14 @@ body{
   margin-left: auto;
   margin-right: auto;
 }
-#messageInput{
+#messageInput {
   flex: 1;
   padding: 8px;
   border-radius: 10px;
   border: none;
   margin-right: 5px;
 }
-#sendBtn{
+#sendBtn {
   padding: 8px 15px;
   border-radius: 10px;
   border: none;
@@ -72,7 +79,7 @@ body{
 </head>
 <body>
 
-<h1>Private Chat Board</h1>
+<h1>Private Multi-User Chat</h1>
 
 <div id="chatContainer"></div>
 
@@ -89,7 +96,7 @@ import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebas
 const PASSWORD = "mysecret123"; // change this
 let loggedIn = sessionStorage.getItem('loggedIn');
 if(!loggedIn){
-  let userPassword = prompt("Enter password to access the chat:");
+  const userPassword = prompt("Enter password to access the chat:");
   if(userPassword === PASSWORD){
     sessionStorage.setItem('loggedIn','true');
     loggedIn = 'true';
@@ -99,14 +106,14 @@ if(!loggedIn){
   }
 }
 
-// ---------------- Unique username per session ----------------
+// ---------------- Username per device ----------------
 let username = sessionStorage.getItem('username');
 if(!username){
   username = prompt("Enter your name:");
   sessionStorage.setItem('username', username || "Anonymous");
 }
 
-// Show input area if logged in
+// Show input if logged in
 if(loggedIn === 'true'){
   document.getElementById('inputArea').style.display = 'flex';
 }
@@ -147,12 +154,21 @@ onValue(messagesRef, snapshot => {
   const messages = snapshot.val() || {};
   chatContainer.innerHTML = '';
   Object.values(messages)
-    .sort((a,b) => a.timestamp - b.timestamp) // oldest first
+    .sort((a,b) => a.timestamp - b.timestamp)
     .forEach(msg => {
       const div = document.createElement('div');
       div.className = 'message ' + (msg.user === username ? 'userMessage' : 'otherMessage');
+
+      // Show message text
       div.textContent = msg.text;
 
+      // Show username
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'userName';
+      nameSpan.textContent = msg.user;
+      div.appendChild(nameSpan);
+
+      // Show timestamp
       const timeSpan = document.createElement('span');
       timeSpan.className = 'time';
       const date = new Date(msg.timestamp);
