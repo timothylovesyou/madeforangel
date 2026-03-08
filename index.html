@@ -2,53 +2,59 @@
 <html>
 <head>
   <!-- Firebase App (required) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<!-- Firebase Realtime Database -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<meta charset="UTF-8">
-<title>Shared Board</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<style>
+  <meta charset="UTF-8">
+  <title>Shared Board</title>
 
-body{
-font-family:Arial;
-background:#0f172a;
-color:white;
-padding:30px;
-}
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 30px;
+    }
 
-.board{
-display:flex;
-gap:20px;
-}
+    .board {
+      display: flex;
+      gap: 20px;
+    }
 
-.column{
-background:#1e293b;
-padding:15px;
-border-radius:10px;
-width:300px;
-}
+    .column {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      width: 300px;
+    }
 
-.card{
-background:white;
-color:black;
-padding:8px;
-margin:6px 0;
-border-radius:6px;
-}
+    .card {
+      background: white;
+      color: black;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 6px;
+    }
 
-button{
-margin-top:15px;
-padding:8px 12px;
-background:#3b82f6;
-color:white;
-border:none;
-border-radius:5px;
-cursor:pointer;
-}
+    button {
+      margin-top: 15px;
+      padding: 8px 12px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
 
-</style>
-
+    input {
+      padding: 6px;
+      width: 200px;
+      border-radius: 4px;
+      border: none;
+      margin-right: 5px;
+    }
+  </style>
 </head>
 
 <body>
@@ -57,82 +63,39 @@ cursor:pointer;
 
 <div class="board">
 
-<div class="column">
-<h2>To Do</h2>
-<div id="todo"></div>
+  <div class="column">
+    <h2>To Do</h2>
+    <div id="todo"></div>
+  </div>
+
+  <div class="column">
+    <h2>Doing</h2>
+    <div id="doing"></div>
+  </div>
+
+  <div class="column">
+    <h2>Done</h2>
+    <div id="done"></div>
+  </div>
+
 </div>
 
-<div class="column">
-<h2>Doing</h2>
-<div id="doing"></div>
+<div style="margin-top:20px;">
+  <input type="text" id="taskInput" placeholder="New task..." />
+  <button id="addBtn">Add Task</button>
 </div>
-
-<div class="column">
-<h2>Done</h2>
-<div id="done"></div>
-</div>
-
-</div>
-
-<button onclick="newTask()">Add Task</button>
 
 <script>
-
-const USER = "timothylovesyou";
-const REPO = "madeforangel";
-
-async function loadTasks(){
-
-const res = await fetch(
-`https://api.github.com/repos/${USER}/${REPO}/issues`
-);
-
-const issues = await res.json();
-
-document.getElementById("todo").innerHTML="";
-document.getElementById("doing").innerHTML="";
-document.getElementById("done").innerHTML="";
-
-issues.forEach(issue => {
-
-let column="todo";
-
-issue.labels.forEach(label=>{
-if(label.name==="doing") column="doing";
-if(label.name==="done") column="done";
-});
-
-const card=document.createElement("div");
-card.className="card";
-card.innerText=issue.title;
-
-document.getElementById(column).appendChild(card);
-
-});
-
-}
-
-function newTask(){
-
-window.open(
-`https://github.com/${USER}/${REPO}/issues/new`,
-"_blank"
-);
-
-}
-
-loadTasks();
-
-  // Your config from Step 2
+  // Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyD7vdMG0fJ8x68pVVbgwgr6tWWrHIp6Ww8",
-  authDomain: "trello-board-da1f2.firebaseapp.com",
-  projectId: "trello-board-da1f2",
-  storageBucket: "trello-board-da1f2.firebasestorage.app",
-  messagingSenderId: "275400958391",
-  appId: "1:275400958391:web:1c9ab00bfe825b31284832",
-  measurementId: "G-1TGH7ZEB6J"
-};
+    apiKey: "AIzaSyD7vdMG0fJ8x68pVVbgwgr6tWWrHIp6Ww8",
+    authDomain: "trello-board-da1f2.firebaseapp.com",
+    projectId: "trello-board-da1f2",
+    storageBucket: "trello-board-da1f2.firebasestorage.app",
+    messagingSenderId: "275400958391",
+    appId: "1:275400958391:web:1c9ab00bfe825b31284832",
+    measurementId: "G-1TGH7ZEB6J"
+  };
 
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
@@ -140,28 +103,48 @@ loadTasks();
 
   const taskInput = document.getElementById('taskInput');
   const addBtn = document.getElementById('addBtn');
-  const taskList = document.getElementById('taskList');
 
-  // Add a task
+  function renderTasks(tasks) {
+    const todoEl = document.getElementById('todo');
+    const doingEl = document.getElementById('doing');
+    const doneEl = document.getElementById('done');
+
+    todoEl.innerHTML = '';
+    doingEl.innerHTML = '';
+    doneEl.innerHTML = '';
+
+    for (let id in tasks) {
+      const task = tasks[id];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.textContent = task.text;
+
+      const col = task.status || 'todo';
+      if (col === 'todo') todoEl.appendChild(card);
+      else if (col === 'doing') doingEl.appendChild(card);
+      else if (col === 'done') doneEl.appendChild(card);
+    }
+  }
+
+  // Listen for real-time changes
+  db.ref('tasks').on('value', snapshot => {
+    const tasks = snapshot.val() || {};
+    renderTasks(tasks);
+  });
+
+  // Add new task
   addBtn.addEventListener('click', () => {
-    const task = taskInput.value.trim();
-    if (!task) return;
-    db.ref('tasks').push({ text: task });
+    const text = taskInput.value.trim();
+    if (!text) return;
+
+    db.ref('tasks').push({
+      text: text,
+      status: 'todo' // default column
+    });
+
     taskInput.value = '';
   });
 
-  // Listen for changes
-  db.ref('tasks').on('value', snapshot => {
-    const tasks = snapshot.val();
-    taskList.innerHTML = '';
-    for (let id in tasks) {
-      const li = document.createElement('li');
-      li.textContent = tasks[id].text;
-      taskList.appendChild(li);
-    }
-  });
-
 </script>
-
 </body>
 </html>
