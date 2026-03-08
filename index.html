@@ -55,12 +55,23 @@ button{
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
   import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-  // ---------------- Password Protection ----------------
+  // ---------------- Password ----------------
   const PASSWORD = "mysecret123"; // change this
-  let userPassword = prompt("Enter password to access the board:");
-  if(userPassword !== PASSWORD){
-    alert("Incorrect password! Access denied.");
-  } else {
+  let loggedIn = sessionStorage.getItem('loggedIn');
+
+  if(!loggedIn){
+    let userPassword = prompt("Enter password to access the board:");
+    if(userPassword === PASSWORD){
+      sessionStorage.setItem('loggedIn', 'true');
+      loggedIn = 'true';
+    } else {
+      alert("Incorrect password! You cannot access this board.");
+      throw new Error("Access denied");
+    }
+  }
+
+  // Show board if logged in
+  if(loggedIn === 'true'){
     document.getElementById('board').style.display = 'flex';
     document.getElementById('inputArea').style.display = 'block';
   }
@@ -85,7 +96,6 @@ button{
 
   // ---------------- Send Message ----------------
   sendBtn.addEventListener('click', () => {
-    if(userPassword !== PASSWORD) return;
     const text = inputEl.value.trim();
     if (!text) return;
     push(ref(db, 'messages'), { text: text, timestamp: Date.now() });
@@ -95,12 +105,10 @@ button{
   // ---------------- Real-time Messages ----------------
   const messagesRef = ref(db, 'messages');
   onValue(messagesRef, snapshot => {
-    if(userPassword !== PASSWORD) return;
     const messages = snapshot.val() || {};
     boardEl.innerHTML = '';
-    // Sort newest first
     Object.values(messages)
-      .sort((a,b) => b.timestamp - a.timestamp)
+      .sort((a,b) => b.timestamp - a.timestamp) // newest first
       .forEach(msg => {
         const div = document.createElement('div');
         div.className = 'card';
