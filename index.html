@@ -14,7 +14,7 @@ body{
   max-width: 500px;
   margin: auto;
   display: flex;
-  flex-direction: column-reverse; /* newest messages at bottom */
+  flex-direction: column; /* oldest on top, newest bottom */
   gap: 10px;
   border: 1px solid #1e293b;
   padding: 10px;
@@ -85,10 +85,9 @@ body{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-// ---------------- Password ----------------
+// ---------------- Password protection ----------------
 const PASSWORD = "mysecret123"; // change this
 let loggedIn = sessionStorage.getItem('loggedIn');
-
 if(!loggedIn){
   let userPassword = prompt("Enter password to access the chat:");
   if(userPassword === PASSWORD){
@@ -100,6 +99,14 @@ if(!loggedIn){
   }
 }
 
+// ---------------- Unique username per session ----------------
+let username = sessionStorage.getItem('username');
+if(!username){
+  username = prompt("Enter your name:");
+  sessionStorage.setItem('username', username || "Anonymous");
+}
+
+// Show input area if logged in
 if(loggedIn === 'true'){
   document.getElementById('inputArea').style.display = 'flex';
 }
@@ -122,21 +129,19 @@ const chatContainer = document.getElementById('chatContainer');
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
 
-const USERNAME = "You"; // you can customize per user if needed
-
-// ---------------- Send Message ----------------
+// ---------------- Send message ----------------
 sendBtn.addEventListener('click', () => {
   const text = messageInput.value.trim();
   if(!text) return;
   push(ref(db, 'messages'), { 
     text: text, 
-    timestamp: Date.now(),
-    user: USERNAME
+    timestamp: Date.now(), 
+    user: username 
   });
   messageInput.value = '';
 });
 
-// ---------------- Real-time Messages ----------------
+// ---------------- Real-time messages ----------------
 const messagesRef = ref(db,'messages');
 onValue(messagesRef, snapshot => {
   const messages = snapshot.val() || {};
@@ -145,7 +150,7 @@ onValue(messagesRef, snapshot => {
     .sort((a,b) => a.timestamp - b.timestamp) // oldest first
     .forEach(msg => {
       const div = document.createElement('div');
-      div.className = 'message ' + (msg.user === USERNAME ? 'userMessage' : 'otherMessage');
+      div.className = 'message ' + (msg.user === username ? 'userMessage' : 'otherMessage');
       div.textContent = msg.text;
 
       const timeSpan = document.createElement('span');
