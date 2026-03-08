@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Private Multi-User Chat</title>
+<title>Private Two-User Chat</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@ body {
   max-width: 500px;
   margin: auto;
   display: flex;
-  flex-direction: column; /* oldest on top */
+  flex-direction: column;
   gap: 10px;
   border: 1px solid #1e293b;
   padding: 10px;
@@ -29,6 +29,7 @@ body {
   max-width: 80%;
   word-wrap: break-word;
   position: relative;
+  color: white;
 }
 .message .time {
   font-size: 10px;
@@ -36,21 +37,6 @@ body {
   position: absolute;
   bottom: -15px;
   right: 10px;
-}
-.message .userName {
-  font-size: 10px;
-  color: #bbb;
-  position: absolute;
-  top: -15px;
-  left: 10px;
-}
-.userMessage {
-  background: #3b82f6;
-  align-self: flex-end;
-}
-.otherMessage {
-  background: #374151;
-  align-self: flex-start;
 }
 #inputArea {
   display: flex;
@@ -67,56 +53,46 @@ body {
   border: none;
   margin-right: 5px;
 }
-#sendBtn {
-  padding: 8px 15px;
+button {
+  padding: 8px 12px;
   border-radius: 10px;
   border: none;
-  background: #3b82f6;
-  color: white;
   cursor: pointer;
 }
+#sendBtn { background: #3b82f6; color:white; }
+#logoutBtn { background: #ef4444; color:white; margin-bottom: 10px; }
+#clearBtn { background: #f97316; color:white; margin-left:5px; }
 </style>
 </head>
 <body>
 
-<h1>Private Multi-User Chat</h1>
+<h1>Private Two-User Chat</h1>
+<button id="logoutBtn">Logout</button>
 
 <div id="chatContainer"></div>
 
 <div id="inputArea" style="display:none;">
   <input id="messageInput" placeholder="Type a message..." />
   <button id="sendBtn">Send</button>
+  <button id="clearBtn">Clear Chat</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-// ---------------- Password protection ----------------
-const PASSWORD = "mysecret123"; // change this
-let loggedIn = sessionStorage.getItem('loggedIn');
-if(!loggedIn){
-  const userPassword = prompt("Enter password to access the chat:");
-  if(userPassword === PASSWORD){
-    sessionStorage.setItem('loggedIn','true');
-    loggedIn = 'true';
-  } else {
-    alert("Incorrect password! Access denied.");
-    throw new Error("Access denied");
-  }
+// ---------------- Password selection ----------------
+// User selects either mysecret123 or mysecret345
+let user = sessionStorage.getItem('user');
+if(!user){
+  let choice = prompt("Enter user (mysecret123 or mysecret345):");
+  if(choice !== "mysecret123" && choice !== "mysecret345") choice = "mysecret123"; // default
+  user = choice;
+  sessionStorage.setItem('user', user);
 }
 
-// ---------------- Username per device ----------------
-let username = sessionStorage.getItem('username');
-if(!username){
-  username = prompt("Enter your name:");
-  sessionStorage.setItem('username', username || "Anonymous");
-}
-
-// Show input if logged in
-if(loggedIn === 'true'){
-  document.getElementById('inputArea').style.display = 'flex';
-}
+// Show input area
+document.getElementById('inputArea').style.display = 'flex';
 
 // ---------------- Firebase Config ----------------
 const firebaseConfig = {
@@ -135,6 +111,11 @@ const db = getDatabase(app);
 const chatContainer = document.getElementById('chatContainer');
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+// ---------------- Bubble colors for two users ----------------
+const colors = { "mysecret123": "#3b82f6", "mysecret345": "#10b981" };
 
 // ---------------- Send message ----------------
 sendBtn.addEventListener('click', () => {
@@ -143,9 +124,24 @@ sendBtn.addEventListener('click', () => {
   push(ref(db, 'messages'), { 
     text: text, 
     timestamp: Date.now(), 
-    user: username 
+    user: user 
   });
   messageInput.value = '';
+});
+
+// ---------------- Logout ----------------
+logoutBtn.addEventListener('click', () => {
+  sessionStorage.removeItem('user');
+  location.reload();
+});
+
+// ---------------- Clear chat ----------------
+clearBtn.addEventListener('click', () => {
+  if(confirm("Are you sure you want to clear all messages?")) {
+    ref(db,'messages').remove()
+      .then(()=>alert("Chat cleared!"))
+      .catch(err=>alert("Error: "+err));
+  }
 });
 
 // ---------------- Real-time messages ----------------
@@ -154,30 +150,27 @@ onValue(messagesRef, snapshot => {
   const messages = snapshot.val() || {};
   chatContainer.innerHTML = '';
   Object.values(messages)
-    .sort((a,b) => a.timestamp - b.timestamp)
+    .sort((a,b)=>a.timestamp - b.timestamp)
     .forEach(msg => {
       const div = document.createElement('div');
-      div.className = 'message ' + (msg.user === username ? 'userMessage' : 'otherMessage');
-
-      // Show message text
+      div.className = 'message';
+      div.style.background = colors[msg.user] || "#374151"; // assign color per user
       div.textContent = msg.text;
 
-      // Show username
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'userName';
-      nameSpan.textContent = msg.user;
-      div.appendChild(nameSpan);
-
-      // Show timestamp
       const timeSpan = document.createElement('span');
       timeSpan.className = 'time';
       const date = new Date(msg.timestamp);
       timeSpan.textContent = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
       div.appendChild(timeSpan);
 
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'userName';
+      nameSpan.textContent = msg.user;
+      div.appendChild(nameSpan);
+
       chatContainer.appendChild(div);
     });
-  chatContainer.scrollTop = chatContainer.scrollHeight; // scroll to bottom
+  chatContainer.scrollTop = chatContainer.scrollHeight;
 });
 </script>
 
