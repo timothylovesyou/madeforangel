@@ -2,8 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shared Message Board</title>
-
+<title>Private Firebase Message Board</title>
 <style>
 body{
   font-family: Arial;
@@ -11,13 +10,12 @@ body{
   color: white;
   padding: 30px;
 }
-
 .board{
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 500px;
 }
-
 .card{
   background: #1e293b;
   color: white;
@@ -25,17 +23,6 @@ body{
   border-radius: 6px;
   word-wrap: break-word;
 }
-
-button{
-  margin-top: 15px;
-  padding: 8px 12px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
 input{
   padding: 6px;
   width: 300px;
@@ -43,59 +30,74 @@ input{
   border: none;
   margin-right: 5px;
 }
+button{
+  padding: 8px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
 </style>
 </head>
-
 <body>
 
-<h1>Shared Message Board</h1>
+<h1>Private Firebase Message Board</h1>
 
 <div id="board" class="board"></div>
 
 <div style="margin-top:20px;">
-  <input type="text" id="messageInput" placeholder="Enter your message..." />
-  <button id="addBtn">Add Message</button>
+  <input id="messageInput" placeholder="Type your message..." />
+  <button id="sendBtn">Send</button>
 </div>
 
-<script>
-// GitHub repo info
-const USER = "timothylovesyou";
-const REPO = "madeforangel";
-const boardEl = document.getElementById('board');
+<!-- Firebase SDKs -->
+<script type="module">
+  // Import Firebase modules
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-// Load messages from GitHub Issues
-async function loadMessages(){
-  try {
-    const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/issues`);
-    const issues = await res.json();
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7vdMG0fJ8x68pVVbgwgr6tWWrHIp6Ww8",
+    authDomain: "trello-board-da1f2.firebaseapp.com",
+    projectId: "trello-board-da1f2",
+    storageBucket: "trello-board-da1f2.firebasestorage.app",
+    messagingSenderId: "275400958391",
+    appId: "1:275400958391:web:1c9ab00bfe825b31284832",
+    measurementId: "G-1TGH7ZEB6J"
+  };
 
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const boardEl = document.getElementById('board');
+  const inputEl = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Send message
+  sendBtn.addEventListener('click', () => {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    push(ref(db, 'messages'), { text: text, timestamp: Date.now() });
+    inputEl.value = '';
+  });
+
+  // Listen for new messages
+  const messagesRef = ref(db, 'messages');
+  onValue(messagesRef, snapshot => {
+    const messages = snapshot.val() || {};
     boardEl.innerHTML = '';
-    issues.reverse().forEach(issue => { // newest first
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerText = issue.title;
-      boardEl.appendChild(card);
-    });
-  } catch(e) {
-    console.error("Failed to load messages:", e);
-  }
-}
-
-// Add new message via GitHub Issues
-document.getElementById('addBtn').addEventListener('click', () => {
-  const title = document.getElementById('messageInput').value.trim();
-  if(!title) return;
-
-  const url = `https://github.com/${USER}/${REPO}/issues/new?title=${encodeURIComponent(title)}`;
-  window.open(url, "_blank");
-  document.getElementById('messageInput').value = '';
-});
-
-// Load messages initially
-loadMessages();
-
-// Auto-refresh every 2 seconds
-setInterval(loadMessages, 2000);
+    Object.values(messages)
+      .sort((a, b) => a.timestamp - b.timestamp) // oldest first
+      .forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.textContent = msg.text;
+        boardEl.appendChild(div);
+      });
+  });
 </script>
 
 </body>
