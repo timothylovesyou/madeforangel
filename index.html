@@ -55,7 +55,7 @@ import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com
 // ---------------- User login ----------------
 let user = sessionStorage.getItem('user');
 while(!user || (user !== "mysecret123" && user !== "mysecret345")) {
-  user = prompt("Enter user (mysecret123 or mysecret345):");
+  user = prompt("Enter Password");
 }
 sessionStorage.setItem('user', user);
 
