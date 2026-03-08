@@ -2,115 +2,100 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shared Task Board</title>
+<title>Shared Message Board</title>
 
 <style>
 body{
-  font-family:Arial;
-  background:#0f172a;
-  color:white;
-  padding:30px;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+  padding: 30px;
 }
 
 .board{
-  display:flex;
-  gap:20px;
-}
-
-.column{
-  background:#1e293b;
-  padding:15px;
-  border-radius:10px;
-  width:300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .card{
-  background:white;
-  color:black;
-  padding:8px;
-  margin:6px 0;
-  border-radius:6px;
+  background: #1e293b;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  word-wrap: break-word;
 }
 
 button{
-  margin-top:15px;
-  padding:8px 12px;
-  background:#3b82f6;
-  color:white;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
+  margin-top: 15px;
+  padding: 8px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+input{
+  padding: 6px;
+  width: 300px;
+  border-radius: 4px;
+  border: none;
+  margin-right: 5px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Shared Task Board</h1>
+<h1>Shared Message Board</h1>
 
-<div class="board">
-  <div class="column">
-    <h2>To Do</h2>
-    <div id="todo"></div>
-  </div>
+<div id="board" class="board"></div>
 
-  <div class="column">
-    <h2>Doing</h2>
-    <div id="doing"></div>
-  </div>
-
-  <div class="column">
-    <h2>Done</h2>
-    <div id="done"></div>
-  </div>
+<div style="margin-top:20px;">
+  <input type="text" id="messageInput" placeholder="Enter your message..." />
+  <button id="addBtn">Add Message</button>
 </div>
-
-<button onclick="newTask()">Add Task</button>
 
 <script>
 // GitHub repo info
 const USER = "timothylovesyou";
 const REPO = "madeforangel";
+const boardEl = document.getElementById('board');
 
-// Load tasks from GitHub Issues
-async function loadTasks(){
-  const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/issues`);
-  const issues = await res.json();
+// Load messages from GitHub Issues
+async function loadMessages(){
+  try {
+    const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/issues`);
+    const issues = await res.json();
 
-  document.getElementById("todo").innerHTML="";
-  document.getElementById("doing").innerHTML="";
-  document.getElementById("done").innerHTML="";
-
-  issues.forEach(issue => {
-    let column = "todo";
-
-    issue.labels.forEach(label=>{
-      if(label.name.toLowerCase() === "doing") column="doing";
-      if(label.name.toLowerCase() === "done") column="done";
+    boardEl.innerHTML = '';
+    issues.reverse().forEach(issue => { // newest first
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerText = issue.title;
+      boardEl.appendChild(card);
     });
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerText = issue.title;
-
-    document.getElementById(column).appendChild(card);
-  });
+  } catch(e) {
+    console.error("Failed to load messages:", e);
+  }
 }
 
-// Add new task via GitHub Issues
-function newTask(){
-  const title = prompt("Enter task title:");
+// Add new message via GitHub Issues
+document.getElementById('addBtn').addEventListener('click', () => {
+  const title = document.getElementById('messageInput').value.trim();
   if(!title) return;
 
   const url = `https://github.com/${USER}/${REPO}/issues/new?title=${encodeURIComponent(title)}`;
   window.open(url, "_blank");
-}
+  document.getElementById('messageInput').value = '';
+});
 
-// Load tasks initially
-loadTasks();
+// Load messages initially
+loadMessages();
 
-// Auto-refresh every 10 seconds
-setInterval(loadTasks, 10000);
+// Auto-refresh every 2 seconds
+setInterval(loadMessages, 2000);
 </script>
 
 </body>
