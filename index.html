@@ -2,120 +2,162 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Private Firebase Message Board</title>
+<title>Private Chat Board</title>
 <style>
 body{
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background: #0f172a;
   color: white;
   padding: 30px;
 }
-.board{
-  display: flex;
-  flex-direction: column-reverse; /* newest first */
-  gap: 10px;
+#chatContainer{
   max-width: 500px;
-}
-.card{
-  background: #1e293b;
-  color: white;
+  margin: auto;
+  display: flex;
+  flex-direction: column-reverse; /* newest messages at bottom */
+  gap: 10px;
+  border: 1px solid #1e293b;
   padding: 10px;
-  border-radius: 6px;
-  word-wrap: break-word;
+  border-radius: 10px;
+  height: 400px;
+  overflow-y: auto;
+  background: #1e293b;
 }
-input{
-  padding: 6px;
-  width: 300px;
-  border-radius: 4px;
+.message{
+  padding: 8px 12px;
+  border-radius: 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+  position: relative;
+}
+.message .time{
+  font-size: 10px;
+  color: #ccc;
+  position: absolute;
+  bottom: -15px;
+  right: 10px;
+}
+.userMessage{
+  background: #3b82f6;
+  align-self: flex-end;
+}
+.otherMessage{
+  background: #374151;
+  align-self: flex-start;
+}
+#inputArea{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+#messageInput{
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
   border: none;
   margin-right: 5px;
 }
-button{
-  padding: 8px 12px;
+#sendBtn{
+  padding: 8px 15px;
+  border-radius: 10px;
+  border: none;
   background: #3b82f6;
   color: white;
-  border: none;
-  border-radius: 5px;
   cursor: pointer;
 }
 </style>
 </head>
 <body>
 
-<h1>Private Firebase Message Board</h1>
+<h1>Private Chat Board</h1>
 
-<div id="board" class="board" style="display:none;"></div>
+<div id="chatContainer"></div>
 
-<div id="inputArea" style="margin-top:20px; display:none;">
-  <input id="messageInput" placeholder="Type your message..." />
+<div id="inputArea" style="display:none;">
+  <input id="messageInput" placeholder="Type a message..." />
   <button id="sendBtn">Send</button>
 </div>
 
 <script type="module">
-  // Import modular SDK
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-  // ---------------- Password with session ----------------
-  const PASSWORD = "mysecret123"; // change this
-  let loggedIn = sessionStorage.getItem('loggedIn');
+// ---------------- Password ----------------
+const PASSWORD = "mysecret123"; // change this
+let loggedIn = sessionStorage.getItem('loggedIn');
 
-  if(!loggedIn){
-    let userPassword = prompt("Enter password to access the board:");
-    if(userPassword === PASSWORD){
-      sessionStorage.setItem('loggedIn', 'true');
-      loggedIn = 'true';
-    } else {
-      alert("Incorrect password! Access denied.");
-      throw new Error("Access denied");
-    }
+if(!loggedIn){
+  let userPassword = prompt("Enter password to access the chat:");
+  if(userPassword === PASSWORD){
+    sessionStorage.setItem('loggedIn','true');
+    loggedIn = 'true';
+  } else {
+    alert("Incorrect password! Access denied.");
+    throw new Error("Access denied");
   }
+}
 
-  if(loggedIn === 'true'){
-    document.getElementById('board').style.display = 'flex';
-    document.getElementById('inputArea').style.display = 'block';
-  }
+if(loggedIn === 'true'){
+  document.getElementById('inputArea').style.display = 'flex';
+}
 
-  // ---------------- Firebase Config ----------------
-  const firebaseConfig = {
-    apiKey: "AIzaSyD7vdMG0fJ8x68pVVbgwgr6tWWrHIp6Ww8",
-    authDomain: "trello-board-da1f2.firebaseapp.com",
-    projectId: "trello-board-da1f2",
-    storageBucket: "trello-board-da1f2.firebasestorage.app",
-    messagingSenderId: "275400958391",
-    appId: "1:275400958391:web:1c9ab00bfe825b31284832",
-    measurementId: "G-1TGH7ZEB6J"
-  };
+// ---------------- Firebase Config ----------------
+const firebaseConfig = {
+  apiKey: "AIzaSyD7vdMG0fJ8x68pVVbgwgr6tWWrHIp6Ww8",
+  authDomain: "trello-board-da1f2.firebaseapp.com",
+  databaseURL: "https://trello-board-da1f2-default-rtdb.firebaseio.com/",
+  projectId: "trello-board-da1f2",
+  storageBucket: "trello-board-da1f2.appspot.com",
+  messagingSenderId: "275400958391",
+  appId: "1:275400958391:web:1c9ab00bfe825b31284832"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  const boardEl = document.getElementById('board');
-  const inputEl = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
+const chatContainer = document.getElementById('chatContainer');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
 
-  // ---------------- Send Message ----------------
-  sendBtn.addEventListener('click', () => {
-    const text = inputEl.value.trim();
-    if (!text) return;
-    push(ref(db, 'messages'), { text: text, timestamp: Date.now() });
-    inputEl.value = '';
+const USERNAME = "You"; // you can customize per user if needed
+
+// ---------------- Send Message ----------------
+sendBtn.addEventListener('click', () => {
+  const text = messageInput.value.trim();
+  if(!text) return;
+  push(ref(db, 'messages'), { 
+    text: text, 
+    timestamp: Date.now(),
+    user: USERNAME
   });
+  messageInput.value = '';
+});
 
-  // ---------------- Real-time Messages ----------------
-  const messagesRef = ref(db, 'messages');
-  onValue(messagesRef, snapshot => {
-    const messages = snapshot.val() || {};
-    boardEl.innerHTML = '';
-    Object.values(messages)
-      .sort((a,b) => b.timestamp - a.timestamp) // newest first
-      .forEach(msg => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.textContent = msg.text;
-        boardEl.appendChild(div);
-      });
-  });
+// ---------------- Real-time Messages ----------------
+const messagesRef = ref(db,'messages');
+onValue(messagesRef, snapshot => {
+  const messages = snapshot.val() || {};
+  chatContainer.innerHTML = '';
+  Object.values(messages)
+    .sort((a,b) => a.timestamp - b.timestamp) // oldest first
+    .forEach(msg => {
+      const div = document.createElement('div');
+      div.className = 'message ' + (msg.user === USERNAME ? 'userMessage' : 'otherMessage');
+      div.textContent = msg.text;
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'time';
+      const date = new Date(msg.timestamp);
+      timeSpan.textContent = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+      div.appendChild(timeSpan);
+
+      chatContainer.appendChild(div);
+    });
+  chatContainer.scrollTop = chatContainer.scrollHeight; // scroll to bottom
+});
 </script>
 
 </body>
