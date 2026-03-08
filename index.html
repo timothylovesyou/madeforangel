@@ -84,7 +84,7 @@ import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com
 // ---------------- User selection ----------------
 let user = sessionStorage.getItem('user');
 if(!user){
-  let choice = prompt("Enter user (mysecret123 or mysecret345):");
+  let choice = prompt("ENTER PASSWORD");
   if(choice !== "mysecret123" && choice !== "mysecret345") choice = "mysecret123"; // default
   user = choice;
   sessionStorage.setItem('user', user);
