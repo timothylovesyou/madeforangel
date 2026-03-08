@@ -52,10 +52,11 @@ button{
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  // Import modular SDK
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-  // ---------------- Password ----------------
+  // ---------------- Password with session ----------------
   const PASSWORD = "mysecret123"; // change this
   let loggedIn = sessionStorage.getItem('loggedIn');
 
@@ -65,12 +66,11 @@ button{
       sessionStorage.setItem('loggedIn', 'true');
       loggedIn = 'true';
     } else {
-      alert("Incorrect password! You cannot access this board.");
+      alert("Incorrect password! Access denied.");
       throw new Error("Access denied");
     }
   }
 
-  // Show board if logged in
   if(loggedIn === 'true'){
     document.getElementById('board').style.display = 'flex';
     document.getElementById('inputArea').style.display = 'block';
