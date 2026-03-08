@@ -113,6 +113,11 @@ const clearBtn = document.getElementById('clearBtn');
 // ---------------- Bubble colors for two users ----------------
 const colors = { "mysecret123": "#3b82f6", "mysecret345": "#10b981" };
 
+// ---------------- Show Clear Chat only for mysecret345 ----------------
+if(user !== "mysecret345") {
+  clearBtn.style.display = 'none';
+}
+
 // ---------------- Send message ----------------
 sendBtn.addEventListener('click', () => {
   const text = messageInput.value.trim();
