@@ -119,6 +119,44 @@ window.open(
 
 loadTasks();
 
+  // Your config from Step 2
+  const firebaseConfig = {
+  apiKey: "AIzaSyD7vdMG0fJ8x68pVVbgwgr6tWWrHIp6Ww8",
+  authDomain: "trello-board-da1f2.firebaseapp.com",
+  projectId: "trello-board-da1f2",
+  storageBucket: "trello-board-da1f2.firebasestorage.app",
+  messagingSenderId: "275400958391",
+  appId: "1:275400958391:web:1c9ab00bfe825b31284832",
+  measurementId: "G-1TGH7ZEB6J"
+};
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const taskInput = document.getElementById('taskInput');
+  const addBtn = document.getElementById('addBtn');
+  const taskList = document.getElementById('taskList');
+
+  // Add a task
+  addBtn.addEventListener('click', () => {
+    const task = taskInput.value.trim();
+    if (!task) return;
+    db.ref('tasks').push({ text: task });
+    taskInput.value = '';
+  });
+
+  // Listen for changes
+  db.ref('tasks').on('value', snapshot => {
+    const tasks = snapshot.val();
+    taskList.innerHTML = '';
+    for (let id in tasks) {
+      const li = document.createElement('li');
+      li.textContent = tasks[id].text;
+      taskList.appendChild(li);
+    }
+  });
+
 </script>
 
 </body>
