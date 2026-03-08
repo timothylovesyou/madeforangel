@@ -71,7 +71,7 @@ button {
 
 <div id="chatContainer"></div>
 
-<div id="inputArea" style="display:none;">
+<div id="inputArea">
   <input id="messageInput" placeholder="Type a message..." />
   <button id="sendBtn">Send</button>
   <button id="clearBtn">Clear Chat</button>
@@ -79,10 +79,9 @@ button {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-// ---------------- Password selection ----------------
-// User selects either mysecret123 or mysecret345
+// ---------------- User selection ----------------
 let user = sessionStorage.getItem('user');
 if(!user){
   let choice = prompt("Enter user (mysecret123 or mysecret345):");
@@ -90,9 +89,6 @@ if(!user){
   user = choice;
   sessionStorage.setItem('user', user);
 }
-
-// Show input area
-document.getElementById('inputArea').style.display = 'flex';
 
 // ---------------- Firebase Config ----------------
 const firebaseConfig = {
@@ -138,7 +134,7 @@ logoutBtn.addEventListener('click', () => {
 // ---------------- Clear chat ----------------
 clearBtn.addEventListener('click', () => {
   if(confirm("Are you sure you want to clear all messages?")) {
-    ref(db,'messages').remove()
+    remove(ref(db,'messages'))
       .then(()=>alert("Chat cleared!"))
       .catch(err=>alert("Error: "+err));
   }
@@ -157,16 +153,12 @@ onValue(messagesRef, snapshot => {
       div.style.background = colors[msg.user] || "#374151"; // assign color per user
       div.textContent = msg.text;
 
+      // Timestamp
       const timeSpan = document.createElement('span');
       timeSpan.className = 'time';
       const date = new Date(msg.timestamp);
       timeSpan.textContent = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
       div.appendChild(timeSpan);
-
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'userName';
-      nameSpan.textContent = msg.user;
-      div.appendChild(nameSpan);
 
       chatContainer.appendChild(div);
     });
